@@ -1,8 +1,6 @@
 import sys
 
 import numpy as np
-import matplotlib as plt
-import scipy as sp
 from graycode import gray_recursive
 
 
@@ -12,15 +10,15 @@ def A_m(m: int):
 
 def P_t(t, T_s):
     """
-    Triangular pulse with duration T_s and max amplitude 1.
-    p(t) = 1 - |t|/T_s  for |t| <= T_s
-    p(t) = 0            otherwise
+    Triangular pulse from 0 to T_s (one-sided).
+    p(t) = 1 - t/T_s  for 0 <= t <= T_s
+    p(t) = 0          otherwise
     """
     return np.where(np.abs(t) <= T_s, 1 - np.abs(t) / T_s, 0)
 
-def X_t(amplitudes, N, T_s):
+def X_t(amplitudes, T_s):
     """
-    Generate PAM waveform x(t) = Σ a_k * p(t - kT_s)
+    Generate PAM waveform x(t) = Σ_k (a_k * p(t - kT_s))
 
     Parameters:
     -----------
@@ -51,7 +49,7 @@ def X_t(amplitudes, N, T_s):
     # Initialize waveform
     x = np.zeros_like(t)
 
-    # Generate waveform as sum of shifted pulses: x(t) = Σ a_k * p(t - kT_s)
+    # Generate waveform as sum of shifted pulses
     for k, a_k in enumerate(amplitudes):
         x += a_k * P_t(t - k * T_s, T_s)
 
@@ -125,46 +123,54 @@ Amplitudes (A_m): {amplitudes}"""
 
     return amplitudes
 
+# Default configuration
+p = 8  # last academic ID digit
+M = 2**(p+3) if p <= 5 else 2**(p-2)  # amplitude points of waveform
 
-p = 8 # last academic ID digit
-M = 2**(p+3) if p <= 5 else 2**(p-2) # amplitude points of waveform
-input_bits = '110101100011100010010011'
+# Default parameters (single source of truth)
+DEFAULT_N = 100
+DEFAULT_INPUT_BITS = '110101100011100010010011'
+DEFAULT_T_s = int(np.log2(M)) / 1e9  # Symbol duration for 1 Gbit/s
 
-# Calculate T_s from bit rate constraint: bit_rate = 1 Gbit/s
-# Bit rate = (bits per symbol) / T_s
-# Therefore: T_s = (bits per symbol) / bit_rate
-bit_rate = 1e9  # 1 Gbit/s = 1e9 bit/s
-bits_per_symbol = int(np.log2(M))
-T_s = bits_per_symbol / bit_rate  # Symbol duration in seconds
 
-# Default number of samples per symbol
-N = 100
+def main(N, T_s, input_bits):
+    """
+    Generate and plot PAM waveform.
 
-# Parse command line arguments if provided (can override defaults)
-# Filter out IDE-specific arguments (like --mode=client)
-if __name__ == "__main__":
-    if len(sys.argv) >= 2:
-        N = int(sys.argv[1])
-    if len(sys.argv) >= 3:
-        T_s = float(sys.argv[2])  # Override calculated T_s if provided
-    if len(sys.argv) >= 4:
-        input_bits = str(sys.argv[3])
-
-print(f"""
+    Parameters:
+    -----------
+    N : int
+        Number of samples per symbol duration
+        (default: 100)
+    T_s : float or None
+        Symbol duration in seconds. If None, calculated for 1 Gbit/s
+        (default: None)
+    input_bits : str
+        Binary string to encode
+        (default: '110101100011100010010011')
+    """
+    print(f"""
 p = {p}
 M = {M}
-Bits per symbol: {bits_per_symbol}
-Bit rate: {bit_rate/1e9:.1f} Gbit/s
+Bit rate: {int(np.log2(M)) / T_s / 1e9:.2f} Gbit/s
+Bits per symbol: {int(np.log2(M))}
 Symbol duration T_s: {T_s*1e9:.2f} ns
 Amplitude range: {A_m(0)} to {A_m(M - 1)}
 Input bits: {input_bits}"""
-)
+    )
 
-amplitudes = bits_to_symbols(input_bits, M)
+    # Convert bits to symbols and amplitudes
+    amplitudes = bits_to_symbols(input_bits, M)
 
-# Generate the waveform
-t, x = X_t(amplitudes, N, T_s)
+    # Generate the waveform
+    t, x = X_t(amplitudes, T_s)
 
-# Plot the waveform
-plot_waveform(t, x, amplitudes, T_s)
+    # Plot the waveform
+    plot_waveform(t, x, amplitudes, T_s)
 
+if __name__ == "__main__":
+    N = int(sys.argv[1]) if len(sys.argv) >= 2 else DEFAULT_N
+    T_s = float(sys.argv[2]) if len(sys.argv) >= 3 else DEFAULT_T_s
+    input_bits = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_INPUT_BITS
+
+    main(N, T_s, input_bits)

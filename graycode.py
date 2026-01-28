@@ -48,18 +48,18 @@ def gray_iterative(M: int):
         result = ["0" + code for code in result] + ["1" + code for code in reflected]
     return result
 
-G4   = gray_recursive(2)
-G16  = gray_recursive(4)
-G256 = gray_recursive(8)
-
-print(G4)
-print(G16)
-print(G256)
-
-G4   = gray_iterative(2)
-G16  = gray_iterative(4)
-G256 = gray_iterative(8)
-
-print(G4)
-print(G16)
-print(G256)
+if __name__ == "__main__":
+    print(f"""
+    Gray code generation examples
+    
+    --- Recursive ---
+    4:{gray_recursive(2)}
+    G16:{gray_recursive(4)} 
+    G256:{gray_recursive(8)}
+    
+    --- Iterative ---
+    4:{gray_iterative(2)}
+    G16:{gray_iterative(4)} 
+    G256:{gray_iterative(8)}
+    
+    """)
