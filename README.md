@@ -132,6 +132,7 @@ S_X(f) = E{a_k²}/T_s · |P(f)|²
 ```bash
 # Μέρος Α
 python i_graycode.py
+python i_graycode.py --test
 
 # Μέρος Β
 python ii_waveform.py [N] [T_s] [input_bits]
@@ -148,9 +149,9 @@ python iii_psd.py 100 6e-9
 
 ```
 communication-systems/
-├── 1_graycode.py      # Μέρος Α - Gray code
-├── 2_waveform.py      # Μέρος Β - PAM waveform
-├── 3_psd.py           # Μέρος Γ - PSD
+├── i_graycode.py      # Μέρος Α - Gray code
+├── ii_waveform.py      # Μέρος Β - PAM waveform
+├── iii_psd.py           # Μέρος Γ - PSD
 ├── output/            # Αποθήκευση γραφημάτων
 │   ├── waveform_plot.png
 │   ├── pulse_spectrum_comparison.png
