@@ -1,4 +1,4 @@
-def gray_recursive(M: int):
+def gray_recursive(M: int) -> list[str]:
     """
     Generate the Gray code of order M.
 
@@ -25,7 +25,7 @@ def gray_recursive(M: int):
 
     return first_half + second_half
 
-def gray_iterative(M: int):
+def gray_iterative(M: int) -> list[str]:
     """
     Generate the Gray code of order M.
 
@@ -42,6 +42,7 @@ def gray_iterative(M: int):
     """
     if M == 0:
         return []
+
     result = ["0", "1"]  # Gray(1)
     for bits in range(2, M + 1):
         reflected = list(reversed(result))
