@@ -57,7 +57,7 @@ def test():
     """
     Run time and memory benchmarks for both Gray code implementations.
 
-    Tests for code sizes: 4, 16, 256 (i.e., M = 2, 4, 8 bits)
+    Tests for code sizes: 4, 16, 256, 1024, 4_096, 16_384, 65_536, 262_144, 1_048_576, 4_194_304 (ie, M=2,4,8,...,22)
 
     Measures:
     - Time: execution time in milliseconds
