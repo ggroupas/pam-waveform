@@ -68,7 +68,7 @@ def test():
     import tracemalloc
     import math
 
-    M_sizes = [4, 16, 256]
+    M_sizes = [4, 16, 256, 1024, 4_096, 16_384, 65_536, 262_144, 1_048_576, 4_194_304]
 
     print(f"""
 {'='*105}
