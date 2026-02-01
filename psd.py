@@ -1,87 +1,138 @@
 import numpy as np
+from numpy.typing import NDArray
+import matplotlib.pyplot as plt
+import os
+from waveform import DEFAULT_T_s, M
+
+T_s: float = DEFAULT_T_s
+OUTPUT_DIR = "output"
 
 
-def calculate_psd(T_s, M, f_max=5e9):
+def P(f: NDArray[np.floating] | float, T_s: float) -> NDArray[np.floating] | float:
     """
-    Calculate the Power Spectral Density of the PAM waveform.
+    Spectrum of triangular pulse.
+    P(f) = (T_s/2) * sinc²(f*T_s/2)
 
-    S_X(f) = E{a_k^2}/T_s * |P(f)|^2
+    Parameters
+    ----------
+    f : frequency in Hz
+    T_s : symbol duration in seconds
 
-    Parameters:
-    -----------
-    T_s : float
-        Symbol duration
-    M : int
-        Number of amplitude levels
-    f_max : float
-        Maximum frequency for plotting (default: 5 GHz)
-
-    Returns:
-    --------
-    f : ndarray
-        Frequency vector
-    S_X : ndarray
-        Power spectral density
+    Returns
+    -------
+    Spectrum values (real, non-negative)
     """
-    # Frequency vector
-    f = np.linspace(-f_max, f_max, 10000)
+    return (T_s / 2) * np.sinc(f * T_s / 2) ** 2
 
-    # Calculate E{a_k^2} for uniform symbol distribution
-    # For M-PAM with A_m = β(2m - M + 1), where m ∈ [0, M-1]
-    amplitudes = np.array([A_m(m) for m in range(M)])
-    E_ak_squared = np.mean(amplitudes ** 2)
-
-    # Fourier transform of triangular pulse p(t)
-    # For symmetric triangular: P(f) = T_s * sinc^2(π*f*T_s)
-    P_f = T_s * np.sinc(f * T_s) ** 2
-
-    # Calculate PSD
-    S_X = (E_ak_squared / T_s) * np.abs(P_f) ** 2
-
-    print(f"""
---- PSD Calculation ---
-E{{a_k^2}}: {E_ak_squared:.4f}
-Symbol duration T_s: {T_s * 1e9:.2f} ns
-Frequency range: {-f_max / 1e9:.1f} to {f_max / 1e9:.1f} GHz
-""")
-
-    return f, S_X
-
-
-def plot_psd(f, S_X, T_s):
+def P_fft(T_s: float, num_samples: int = 10000) -> tuple[NDArray[np.floating], NDArray[np.complexfloating]]:
     """
-    Plot the Power Spectral Density.
+    Spectrum of triangular pulse using FFT.
+
+    Parameters
+    ----------
+    T_s : symbol duration in seconds
+    num_samples : FFT points (higher = finer frequency grid)
+
+    Returns
+    -------
+    (frequencies, complex spectrum)
     """
-    import matplotlib.pyplot as plt
+    t_max = T_s * 5
+    dt = t_max / num_samples
+    t = np.linspace(-t_max / 2, t_max / 2, num_samples, endpoint=False)
+    p_t = np.where(np.abs(t) <= T_s / 2, 1 - 2 * np.abs(t) / T_s, 0)
+    P_f = dt * np.fft.fftshift(np.fft.fft(np.fft.fftshift(p_t)))
+    f = np.fft.fftshift(np.fft.fftfreq(num_samples, dt))
+    return f, P_f
 
-    plt.figure(figsize=(12, 6))
+def spectrum_fft(t: NDArray[np.floating], x: NDArray[np.floating]) -> NDArray[np.complexfloating]:
+    """
+    Parameters
+    ----------
+    t : time array
+    x : signal values
 
-    # Plot PSD in dB scale
-    S_X_dB = 10 * np.log10(S_X + 1e-12)  # Add small value to avoid log(0)
+    Returns
+    -------
+    Complex spectrum (fftshifted)
+    """
+    dt = t[1] - t[0]
+    return dt * np.fft.fftshift(np.fft.fft(np.fft.fftshift(x)))
 
-    plt.plot(f / 1e9, S_X_dB, 'b-', linewidth=1.5)
-    plt.xlabel('Frequency (GHz)', fontsize=12)
-    plt.ylabel('Power Spectral Density (dB)', fontsize=12)
-    plt.title(f'PSD of PAM Waveform - M={M}, T_s={T_s * 1e9:.2f} ns',
-              fontsize=14, fontweight='bold')
-    plt.grid(True, alpha=0.3)
+
+def power_spectral_density(t: NDArray[np.floating], x: NDArray[np.floating]) -> NDArray[np.floating]:
+    """
+    Parameters
+    ----------
+    t : time array
+    x : signal values
+
+    Returns
+    -------
+    Power spectral density
+    """
+    T = np.max(t) - np.min(t)
+    return 1.0 / T * np.abs(spectrum_fft(t, x)) ** 2.0
+
+def energy(t: NDArray[np.floating], x: NDArray[np.floating]) -> float:
+    """
+    Signal energy: ∫|x(t)|² dt
+
+    Parameters
+    ----------
+    t : time array
+    x : signal values
+
+    Returns
+    -------
+    Energy
+    """
+    return np.trapezoid(np.abs(x) ** 2.0, t)
+
+
+if __name__ == "__main__":
+    bits_per_symbol = int(np.log2(M))
+    E_a2 = (M**2 - 1) / 3
+
+    print(f"M={M}, T_s={T_s:.2e}s, Bit rate={bits_per_symbol/T_s/1e9:.2f} Gbit/s, E{{a_k²}}={E_a2:.2f}")
+
+    # Compute spectra
+    f_fft, P_f_fft = P_fft(T_s)
+    P_f = P(f_fft, T_s)
+    S_X = (E_a2 / T_s) * np.abs(P_f) ** 2
+
+    # ===== FIGURE 1: Pulse Spectrum P(f) - 3 subplots =====
+    fig1, axes1 = plt.subplots(1, 3, figsize=(15, 4))
+
+    for ax, data, title, color in zip(
+        axes1[:2],
+        [P_f, P_f_fft],
+        ['P(f)', 'P(f) FFT'],
+        ['b-', 'r-']
+    ):
+        ax.plot(f_fft/1e9, np.abs(data), color, linewidth=2)
+        ax.set(xlabel='Frequency (GHz)', ylabel='|P(f)|', title=title, xlim=[-5, 5])
+        ax.grid(True)
+
+    axes1[2].plot(f_fft / 1e9, np.abs(P_f), 'b-', label='Simple', linewidth=2)
+    axes1[2].plot(f_fft/1e9, np.abs(P_f_fft), 'r--', label='FFT', linewidth=1.5)
+    axes1[2].set(xlabel='Frequency (GHz)', ylabel='|P(f)|', title='Comparison', xlim=[-5, 5])
+    axes1[2].legend()
+    axes1[2].grid(True)
+
+    fig1.suptitle('Triangular Pulse Spectrum P(f)', fontsize=14)
     plt.tight_layout()
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    plt.savefig(f'{OUTPUT_DIR}/pulse_spectrum_comparison.png', dpi=150)
 
-    # Save plot
-    plt.savefig('psd_plot.png', dpi=150)
-    print(f"PSD plot saved to: psd_plot.png")
+    # ===== FIGURE 2: Power Spectral Density S_X(f) =====
+    fig2, ax2 = plt.subplots(figsize=(10, 5))
+    ax2.plot(f_fft/1e9, S_X, 'b-', linewidth=2, label=r'$S_X(f) = \frac{E\{a_k^2\}}{T_s}|P(f)|^2$')
+    ax2.set(xlabel='Frequency (GHz)', ylabel=r'$S_X(f)$ (W/Hz)',
+            title=f'Power Spectral Density (M={M})', xlim=[-5, 5])
+    ax2.legend()
+    ax2.grid(True)
+    plt.tight_layout()
+    plt.savefig(f'{OUTPUT_DIR}/psd_plot.png', dpi=150)
+
     plt.show()
-
-
-
-def main(N, T_s, input_bits):
-    """
-    Generate and plot PAM waveform and PSD.
-    """
-    # ... existing code ...
-
-    # Plot the waveform
-
-    # Part 3: Calculate and plot PSD
-    f, S_X = calculate_psd(T_s, M)
-    plot_psd(f, S_X, T_s)
