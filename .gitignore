@@ -3,8 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Output files
-output/
 
 # Distribution / packaging
 .Python
@@ -103,3 +101,4 @@ Thumbs.db
 *.backup
 
 /.idea/
+
