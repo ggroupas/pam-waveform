@@ -5,7 +5,7 @@ import os
 import sys
 from ii_waveform import DEFAULT_T_s, M, DEFAULT_N
 
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "../output"
 
 
 def P(f: NDArray[np.floating] | float, T_s: float) -> NDArray[np.floating] | float:

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from i_graycode import gray_recursive
 
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "../output"
 
 
 def A_m(m: int):
