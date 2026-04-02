@@ -1,6 +1,47 @@
 # PAM Communication System - Τηλεπικοινωνιακά Συστήματα
 
-**Στοιχεία:**
+## Environment Setup
+
+### Prerequisites
+- Python 3.8 or higher
+- pip (Python package manager)
+
+### Installation Steps
+
+1. **Create a virtual environment (recommended):**
+   
+   **On Windows:**
+   ```powershell
+   python -m venv pam-waveform
+   pam-waveform\Scripts\Activate.ps1
+   ```
+   
+   **On macOS/Linux:**
+   ```bash
+   python3 -m venv pam-waveform
+   source pam-waveform/bin/activate
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Verify installation:**
+   ```bash
+   python -c "import numpy; import matplotlib; print('Dependencies installed successfully!')"
+   ```
+
+### Requirements
+- `numpy == 2.4.1` - Numerical computing library
+- `matplotlib == 3.10.8` - Plotting and visualization library
+
+### Output Directory
+The `output/` folder is used to store generated plots. It will be created automatically when running the scripts if it doesn't exist.
+
+---
+
+## Εισαγωγή
 - p = 8 (τελευταίο ψηφίο ΑΜ)
 - M = 64 (επίπεδα πλάτους)
 - Bits per symbol = 6
